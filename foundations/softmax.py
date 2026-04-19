@@ -4,12 +4,16 @@ from numpy.typing import NDArray
 
 class Solution:
 
-    def softmax(self, z: NDArray[np.float64]) -> NDArray[np.float64]:
+    def softmax(self, outputs: NDArray[np.float64]) -> NDArray[np.float64]:
         # z is a 1D NumPy array of logits
         # Hint: subtract max(z) for numerical stability before computing exp
         # return np.round(your_answer, 4)
-        z_shifted = z - np.max(z)
-        exp_z = np.exp(z_shifted)
-        res = exp_z / np.sum(exp_z)
-        res = [round(i,4) for i in res]
-        return res
+        
+        output_shifted = outputs - np.max(outputs)  # saves from overflow 
+
+        e_outputs = np.exp(output_shifted)  # find each ones e^z(i)
+
+        # get probability for each one z output
+        res = [round(z / np.sum(e_outputs), 4) for z in e_outputs] 
+
+        return res 
