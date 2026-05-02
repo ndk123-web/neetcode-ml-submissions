@@ -21,43 +21,39 @@ class Solution:
         #   'db1':   1D list (gradient w.r.t. b1, rounded to 4 decimals)
         #   'dW2':   2D list (gradient w.r.t. W2, rounded to 4 decimals)
         #   'db2':   1D list (gradient w.r.t. b2, rounded to 4 decimals)
+        x = np.array(x)
+        W1 = np.array(W1)
+        W2 = np.array(W2)
+        b1 = np.array(b1)
+        b2 = np.array(b2)
+        y_true = np.array(y_true)
 
-        layer1_weighted_sum = np.dot(x, np.array(W1).T) + b1
-        layer1_y_pred = np.maximum(layer1_weighted_sum, 0)
+        # feed forward
+        z1 = x @ W1.T + b1  # Hidden Layer 1
+        a1 = np.maximum(0, z1)
 
-        y_pred = np.dot(layer1_y_pred, np.array(W2).T) + b2
+        z2 = a1 @ W2.T + b2  # Output Layer
 
-        loss = np.mean((y_pred - y_true) ** 2)
+        loss = np.mean((z2 - y_true) ** 2)  # Calculate Loss
 
-        n = len(y_pred)
+        # backpropagation
+        n = len(y_true) if y_true.ndim > 0 else 1
 
-        # dL/dy_pred
-        dL_dy = (2 / n) * (y_pred - y_true)
+        error = z2 - y_true
+        dL_by_dZ2 = (2 / n) * (error)
+        dZ2_by_dW2 = dL_by_dZ2.reshape(-1, 1) @ a1.reshape(1, -1)
+        dZ2_by_dB2 = dL_by_dZ2 * 1
 
-        # ---- Layer 2 (Linear) ----
-        dL_dz2 = dL_dy
-
-        dW2 = np.outer(dL_dz2, layer1_y_pred)
-        db2 = dL_dz2
-
-        # ---- Backprop to Layer 1 ----
-        dL_da1 = np.dot(np.array(W2).T, dL_dz2)
-
-        # ReLU derivative (IMPORTANT: use z1)
-        relu_grad = (layer1_weighted_sum > 0).astype(float)
-
-        dL_dz1 = dL_da1 * relu_grad
-
-        # ---- Layer 1 (Linear) ----
-        dW1 = np.outer(dL_dz1, x)
-        dW1 = np.round(dW1, 4)
-        dW1[dW1 == -0.0] = 0.0
-        db1 = dL_dz1
+        dL_by_da1 = dL_by_dZ2.reshape(1, -1) @ W2
+        dL_by_da1 = dL_by_da1.flatten()
+        dL_by_dz1 = dL_by_da1 * (z1 > 0).astype(float)
+        dZ_by_dW1 = dL_by_dz1.reshape(-1, 1) @ x.reshape(1, -1)
+        dZ_by_dB1 = dL_by_dz1 * 1
 
         return {
-            "loss": round(float(loss), 4),
-            "dW1": np.round(dW1, 4).tolist(),
-            "db1": np.round(db1, 4).tolist(),
-            "dW2": np.round(dW2, 4).tolist(),
-            "db2": np.round(db2, 4).tolist(),
+            'loss': round(float(loss), 4),
+            'dW1': np.round(dZ_by_dW1, 4).tolist(),
+            'db1': np.round(dZ_by_dB1, 4).tolist(),
+            'dW2': np.round(dZ2_by_dW2, 4).tolist(),
+            'db2': np.round(dZ2_by_dB2, 4).tolist(),
         }
